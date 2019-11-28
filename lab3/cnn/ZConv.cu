@@ -74,12 +74,6 @@ void activateCUDA(
   int cuda_y = blockIdx.y * blockDim.y + threadIdx.y; 
   int step_x = blockDim.x * gridDim.x; 
   int step_y = blockDim.y * gridDim.y; 
-
-  //__shared__ float temp[784];
-  //int tx = threadIdx.x;
-  //if(tx<784) temp[tx] = input[tx];
-  //__syncthreads();
-  
   
   for (int filter = 0; filter < fSize; filter++) {
       for (int x = cuda_x; x < outSizeX; x += step_x) {
@@ -124,10 +118,6 @@ void conv_layer_t::activate(tensor_t<float> &in)
   dim3 block(blockSize,blockSize);
   dim3 grid((this->in.size.x+blockSize-1)/blockSize,(this->in.size.y+blockSize-1)/blockSize);
 
-  //float* fff = NULL;
-  //cudaMalloc(&fff,this->filterSize);
-  //cudaMemcpy(fff,this->filters[i].data.data(),this->filterSize,cudaMemcpyHostToDevice);
-
   activateCUDA<<<grid,block>>>(
     this->input,
     this->output,
@@ -162,66 +152,6 @@ void conv_layer_t::fix_weights()
             update_gradient(grad);
           }
   }
-
-/*
-
-__global__
-void fixCUDA(
-  int fSize,
-  uint16_t extend_filter,
-  float* filterData,
-  float* oldGrads,
-  float* grads
-  ){
-    for (int a = 0; a < fSize; a++)
-      for (int i = 0; i < extend_filter; i++)
-        for (int j = 0; j < extend_filter; j++){
-          
-            float &w = filterData[a*(extend_filter*extend_filter)+j*(extend_filter)+i];
-            float &old = oldGrads[a*(extend_filter*extend_filter)+j*(extend_filter)+i];
-            float &cur = grads[a*(extend_filter*extend_filter)+j*(extend_filter)+i];
-            
-            w = update_weightCUDA(w, old,cur);
-            update_gradientCUDA(old,cur);
-          }
-}
-
-void conv_layer_t::fix_weights()
-{
-  int gridNum = this->gridSize/sizeof(float);
-  float o1[gridNum];
-  float o2[gridNum];
-  for (int k = 0; k < this->filter_grads.size(); k++) {
-      for (int i = 0; i < this->extend_filter; i++)
-        for (int j = 0; j < this->extend_filter; j++)
-          for (int z = 0; z < this->in.size.z; z++)
-            filter_grads[k].get(i, j, z).grad = 0;
-    }
-  
-  cudaMemcpy(this->oldGrads,o1,this->gradSize,cudaMemcpyHostToDevice);
-  cudaMemcpy(this->grads,o2,this->gradSize,cudaMemcpyHostToDevice);
-  
-  fixCUDA<<<1,1>>>(this->filters.size(),
-  this->extend_filter,
-  this->filterData,
-  this->oldGrads,
-  this->grads
-  );
-}
-
-__device__ float update_weightCUDA(float w, gradient_t &grad, float multp = 1) {
-    float m = (grad.grad + grad.oldgrad * MOMENTUM);
-    w -= LEARNING_RATE * m * multp +
-         LEARNING_RATE * WEIGHT_DECAY * w;
-    return w;
-}
-
-__device__ void update_gradientCUDA(gradient_t &grad) {
-    grad.oldgrad = (grad.grad + grad.oldgrad * MOMENTUM);
-}
-
-*/
-
 
 __device__ int normalize_range(float f, int max, bool lim_min) {
     if (f <= 0)
