@@ -44,29 +44,10 @@ Matrix<float> multiplyMatricesSIMD(Matrix<float> a, Matrix<float> b) {
   if(I!=b.rows) 
 	throw std::domain_error("Matrix dimensions do not match.");
 
-//  auto res_1 = Matrix<float>(N,M);
   auto res_2 = Matrix<float>(N,M);
-//  auto res = Matrix<float>(N,M);
-//  auto res_temp = Matrix<float>(N,M);
   __m128 x,y,z;
   avxd av;
 
-//  Timer time;
-//  time.start();
-//  for(size_t i=0;i<N;i++){
-//	for(size_t j=0;j<M;j++){
-//		res(i,j) = 0;
-//		for(size_t k=0;k<I;k++){
-//   			res(i,j) += a(i,k) * b(k,j);
-//		}
-//	}
-//  }
-//  time.stop(); 
-//  std::cout << "Original float try: total time is:";
-//  time.report();
-//  std::cout << " seconds." << std::endl;
-//  float** xa = (float**) malloc(4*sizeof(float)*N*I);
-//  float** xb = (float**) malloc(4*sizeof(float)*M*I);
 if(N>=256){ 
   float** xa = new float*[1024];
   for(int i=0;i<1024;i++)
@@ -116,32 +97,6 @@ if(N>=256){
   	}
   }
 }
-//  x = _mm_setzero_ps();
-//  y = _mm_setzero_ps();
-  
-//  time.start();
-//  for(size_t i=0;i<N;i++){
-//	for(size_t j=0;j<M;j++){
-//		res_temp(i,j) = 0;
-//		z = _mm_setzero_ps();
-//		for(size_t k=0;k<I-TIME_STEP_4;k+=TIME_STEP_4){
-//			x = _mm_loadu_ps(&a(i,k));
-//			y = _mm_loadu_ps(&b(k,j));
-//			x = _mm_mul_ps(x,y);
-//			z = _mm_add_ps(x,z);
-//		}
-//		for(size_t m=0;m<2;m++)
-//			z = _mm_hadd_ps(z,z);
-//		_mm_store_ss(&res_temp(i,j),z); 
-//		for(size_t k=I-(I%TIME_STEP_4);k<I;k++)
-//			res_temp(i,j) += a(i,k)*b(k,j);
-//	}
-//  }
-//  time.stop(); 
-//  std::cout << "Third float try: total time is:";
-//  time.report();
-//  std::cout << " seconds." << std::endl;
-
   return res_2;
 }
 
@@ -177,7 +132,6 @@ if(N>=256){
         for(size_t i=0;i<N;i+=TIME_STEP_4){
        		z0.val=z1.val=z2.val=z3.val=z4.val=z5.val=z6.val=z7.val=z8.val=z9.val=z10.val=z11.val=z12.val=z13.val=z14.val=z15.val=_mm256_setzero_pd();
         	for(size_t k=0;k<I-TIME_STEP_4;k+=TIME_STEP_4){
-        //		x0.val = _mm256_set_pd(a(i,k),a(i,k+1),a(i,k+2),a(i,k+3));
         		x0.val = _mm256_loadu_pd(xa[int(i)]+k);
         		x1.val = _mm256_loadu_pd(xa[int(i+1)]+k);
         		x2.val = _mm256_loadu_pd(xa[int(i+2)]+k);
@@ -186,13 +140,6 @@ if(N>=256){
         		y1.val = _mm256_loadu_pd(xa[int(j+1)]+k);
         		y2.val = _mm256_loadu_pd(xa[int(j+2)]+k);
         		y3.val = _mm256_loadu_pd(xa[int(j+3)]+k);
-       // 		x1.val = _mm256_set_pd(a(i+1,k),a(i+1,k+1),a(i+1,k+2),a(i+1,k+3));
-       // 		x2.val = _mm256_set_pd(a(i+2,k),a(i+2,k+1),a(i+2,k+2),a(i+2,k+3));
-       // 		x3.val = _mm256_set_pd(a(i+3,k),a(i+3,k+1),a(i+3,k+2),a(i+3,k+3));
-       //		y0.val = _mm256_set_pd(b(k,j),b(k+1,j),b(k+2,j),b(k+3,j));
-       // 		y1.val = _mm256_set_pd(b(k,j+1),b(k+1,j+1),b(k+2,j+1),b(k+3,j+1));
-       // 		y2.val = _mm256_set_pd(b(k,j+2),b(k+1,j+2),b(k+2,j+2),b(k+3,j+2));
-       // 		y3.val = _mm256_set_pd(b(k,j+3),b(k+1,j+3),b(k+2,j+3),b(k+3,j+3));
         		z0.val = _mm256_add_pd(z0.val,_mm256_mul_pd(x0.val,y0.val));
         		z1.val = _mm256_add_pd(z1.val,_mm256_mul_pd(x0.val,y1.val));
         		z2.val = _mm256_add_pd(z2.val,_mm256_mul_pd(x0.val,y2.val));
@@ -227,15 +174,7 @@ if(N>=256){
 			res_2(i+3,j+1) += z13.arr[m];
 			res_2(i+3,j+2) += z14.arr[m];
 			res_2(i+3,j+3) += z15.arr[m];
-		}
-//        	_mm256_storeu_pd(&res_temp(i,j),z0);	
-//        	_mm256_storeu_pd(&res_temp(i,j+1),z1);	
-//        	_mm256_storeu_pd(&res_temp(i,j+2),z2);	
-//        	_mm256_storeu_pd(&res_temp(i,j+3),z3);	
-//        	_mm256_storeu_pd(&res_temp(i+1,j),z4);	
-//        	_mm256_storeu_pd(&res_temp(i+1,j+1),z5);	
-//        	_mm256_storeu_pd(&res_temp(i+1,j+2),z6);	
-//        	_mm256_storeu_pd(&res_temp(i+1,j+3),z7);	
+		}	
       }
   }
 } else {
@@ -291,8 +230,6 @@ if(N>=256){
   }
 
 }
-//  time.stop();
-//  time.report();
 
   return res_2;
 
